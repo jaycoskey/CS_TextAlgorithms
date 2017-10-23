@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# by Jay M. Coskey - entered into the public domain
 
 import numpy as np
 
