@@ -252,6 +252,7 @@ def test(verbose_flags=SHOW_NONE):
         data = StringDistanceData(s1, s2, SHOW_ALL if s1=='abc' and s2=='ca' else SHOW_NONE)
         if table is not None:
             assert(np.array_equal(data.table, table))
+        assert(data.distance == dist)
         forward_ops_chain = data.get_forward_ops_chain()
         string_chain = get_string_chain(s1, s2, forward_ops_chain)
         (verbose_flags & VerboseFlag.SHOW_COST)   and data.print_distances()
@@ -340,7 +341,7 @@ def test(verbose_flags=SHOW_NONE):
         # ('abcd',   'badc',    2),                      # Xps_2
 
         # Other
-        ('a',       'z',      0, d_lev_a_z),             # Short
+        ('a',       'z',      1, d_lev_a_z),             # Short
         ('abc',     'abc',    0, d_lev_abc_abc),         # Identical
         ('abc',     'xyz',    3, d_lev_abc_xyz),         # Disjoint
         ('board',   'border', 3, d_lev_board_border),    # Mix_Del_Ins
