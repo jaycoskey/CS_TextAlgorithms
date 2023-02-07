@@ -66,13 +66,13 @@ class StringDistanceData:
     # def cost_transposition(c1, c2):
     #     return 1
 
-    def __init__(self, s1, s2, verbose_flags):
+    def __init__(self, s1, s2, verbose):
         self.s1 = s1
         self.s2 = s2
 
         m = len(s1)
         n = len(s2)
-        if verbose_flags != SHOW_NONE:
+        if verbose:
             print(f'Finding Levelshtein distance data from {s1}(len={m}) to {s2}(len={n})')
 
         # Initialize distance table and list of transformations
@@ -121,7 +121,7 @@ class StringDistanceData:
                     #     cost_ttrans = cost_transposition(s1[iPrev - 1], s1[i - 1])
                     #     cost_trans = dist[iPrev - 1, jPrev - 1] + cost_tdel + cost_tins + cost_ttrans
 
-                    # if verbose_flags & VerboseFlag.SHOW_STATUS:
+                    # if verbose:
                     #     s1_prev_str = f's1[{i-1}]={s1[i-1]}' if iPrev == 0 else ''
                     #     s2_prev_str = f's2[{j-1}]={s2[j-1]}' if jPrev == 0 else ''
                     #     sep = ', ' if s1_prev_str and s2_prev_str else ''
@@ -147,11 +147,11 @@ class StringDistanceData:
                 # End of s2 loop
 
             # char2lastpos[s1[i - 1]] = i
-            # if verbose_flags != SHOW_NONE:
+            # if verbose:
             #     print_output_delimiter('End of s1 loop')
             # End of s1 loop
 
-        if verbose_flags & VerboseFlag.SHOW_COST == True:
+        if verbose:
             print('    Distance table:')
             print(dist)
 
@@ -159,7 +159,7 @@ class StringDistanceData:
         self.table = dist
         self.ops = ops
 
-    def get_forward_ops_chain(self, verbose_flags=SHOW_NONE):
+    def get_forward_ops_chain(self, verbose=False):
         """Returns a minimal cost "forward ops chain"---ops applied to s1 that yield s2."""
         (i, j) = self.table.shape
         i -= 1
@@ -238,7 +238,7 @@ def get_string_chain(s1, s2, forward_ops_chain):
 
 
 def is_string_chain_valid(s1, s2, dist, table=None, verbose=False):
-    data = StringDistanceData(s1, s2, SHOW_ALL if s1=='abc' and s2=='ca' else SHOW_NONE)
+    data = StringDistanceData(s1, s2, verbose)
     if table is not None:
         assert(np.array_equal(data.table, table))
     assert(data.distance == dist)
@@ -249,8 +249,8 @@ def is_string_chain_valid(s1, s2, dist, table=None, verbose=False):
     verbose and data.print_forward_ops_chain()
     return string_chain[-1] == s2
 
-class StringDistanceDataTest(unittest.TestCase):
 
+class StringDistanceDataTest(unittest.TestCase):
     # Deletion
     d_lev_table_able  = np.array([[0,1,2,3,4], [1,1,2,3,4], [2,1,2,3,4], [3,2,1,2,3], [4,3,2,1,2], [5,4,3,2,1]])
     d_lev_point_pint  = np.array([[0,1,2,3,4], [1,0,1,2,3], [2,1,1,2,3], [3,2,1,2,3], [4,3,2,1,2], [5,4,3,2,1]])
@@ -291,7 +291,6 @@ class StringDistanceDataTest(unittest.TestCase):
     d_lev_sitting_kitten = np.array([[0,1,2,3,4,5,6], [1,1,2,3,4,5,6], [2,2,1,2,3,4,5], [3,3,2,1,2,3,4],
                                      [4,4,3,2,1,2,3], [5,5,4,3,2,2,3], [6,6,5,4,3,3,2], [7,7,6,5,4,4,3]])
 
-
     test_data = {
         # Del
         'Del_1_head': ('table',  'able',    1, d_lev_table_able),
@@ -318,10 +317,10 @@ class StringDistanceDataTest(unittest.TestCase):
         'Sub_2_body': ('a_ij_z', 'a_pq_z',  2, d_lev_ij_pq),
 
         # Xps
-        # ('star',   'tsar',    1),                      # Xps_1_head
-        # ('files',  'flies',   1),                      # Xps_1_body
-        # ('boast',  'boats',   1),                      # Xps_1_tail
-        # ('abcd',   'badc',    2),                      # Xps_2
+        # 'Xps_1_head': ('star',   'tsar',    1),
+        # 'Xps_1_body': ('files',  'flies',   1),
+        # 'Xps_1_tail': ('boast',  'boats',   1),
+        # 'Xps_2':      ('abcd',   'badc',    2),
 
         # Other
         'Sub_short':   ('a',       'z',      1, d_lev_a_z),
@@ -332,8 +331,10 @@ class StringDistanceDataTest(unittest.TestCase):
         'Wikipedia':   ('sitting', 'kitten', 3, d_lev_sitting_kitten),
         }
 
-    def test_string_chains(self, verbose=False):
-        for test_input in StringDistanceDataTest.test_data.values():
+    def test_string_chains(self, verbose=True):
+        for test_name, test_input in StringDistanceDataTest.test_data.items():
+            if verbose:
+                print(f'test_string_chains: test_name={test_name}')
             assert(is_string_chain_valid(*test_input, verbose))
 
 
