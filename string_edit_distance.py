@@ -4,7 +4,6 @@
 # Refactored, removing transposition support, but adding ability to find the operation chain.
 # TODO: Get chain of ops to apply to the second string to obtain the first string.
 # TODO: Restore support for transpositions.
-# TODO: Convert tests to unittest.
 
 from dataclasses import astuple, dataclass
 from enum import Enum, Flag, auto
@@ -12,6 +11,7 @@ import sys
 from typing import Tuple
 
 import numpy as np
+import unittest
 
 # ========================================
 
@@ -46,16 +46,6 @@ class Op:
 
     # def __str__(self):
     #     return f'{self.op_type.name[0:3]}({self.pos1},{self.pos2})'
-
-# ========================================
-
-class VerboseFlag(Flag):
-    SHOW_COST = auto()
-    SHOW_OPS = auto()
-    SHOW_STATUS = auto()
-
-SHOW_NONE = VerboseFlag(0)
-SHOW_ALL = VerboseFlag.SHOW_COST | VerboseFlag.SHOW_OPS | VerboseFlag.SHOW_STATUS
 
 # ========================================
 
@@ -247,26 +237,19 @@ def get_string_chain(s1, s2, forward_ops_chain):
     return chain
 
 
-def test(verbose_flags=SHOW_NONE):
-    def is_string_chain_valid(s1, s2, dist, table=None):
-        data = StringDistanceData(s1, s2, SHOW_ALL if s1=='abc' and s2=='ca' else SHOW_NONE)
-        if table is not None:
-            assert(np.array_equal(data.table, table))
-        assert(data.distance == dist)
-        forward_ops_chain = data.get_forward_ops_chain()
-        string_chain = get_string_chain(s1, s2, forward_ops_chain)
-        (verbose_flags & VerboseFlag.SHOW_COST)   and data.print_distances()
-        (verbose_flags & VerboseFlag.SHOW_OPS)    and data.print_ops()
-        (verbose_flags & VerboseFlag.SHOW_STATUS) and data.print_forward_ops_chain()
-        (verbose_flags != SHOW_NONE) and print('=' * 40)
-        return string_chain[-1] == s2
+def is_string_chain_valid(s1, s2, dist, table=None, verbose=False):
+    data = StringDistanceData(s1, s2, SHOW_ALL if s1=='abc' and s2=='ca' else SHOW_NONE)
+    if table is not None:
+        assert(np.array_equal(data.table, table))
+    assert(data.distance == dist)
+    forward_ops_chain = data.get_forward_ops_chain()
+    string_chain = get_string_chain(s1, s2, forward_ops_chain)
+    verbose and data.print_distances()
+    verbose and data.print_ops()
+    verbose and data.print_forward_ops_chain()
+    return string_chain[-1] == s2
 
-    def run_tests(test_data):
-        (verbose_flags & VerboseFlag.SHOW_STATUS) and print('Running tests: ', end='')
-        for test_input in test_data:
-            print('.', end='')
-            assert(is_string_chain_valid(*test_input))
-        print()
+class StringDistanceDataTest(unittest.TestCase):
 
     # Deletion
     d_lev_table_able  = np.array([[0,1,2,3,4], [1,1,2,3,4], [2,1,2,3,4], [3,2,1,2,3], [4,3,2,1,2], [5,4,3,2,1]])
@@ -309,30 +292,30 @@ def test(verbose_flags=SHOW_NONE):
                                      [4,4,3,2,1,2,3], [5,5,4,3,2,2,3], [6,6,5,4,3,3,2], [7,7,6,5,4,4,3]])
 
 
-    test_data = [
+    test_data = {
         # Del
-        ('table',  'able',    1, d_lev_table_able),      # Del_1_head
-        ('point',  'pint',    1, d_lev_point_pint),      # Del_1_body
-        ('ends',   'end',     1, d_lev_ends_end),        # Del_1_tail
+        'Del_1_head': ('table',  'able',    1, d_lev_table_able),
+        'Del_1_body': ('point',  'pint',    1, d_lev_point_pint),
+        'Del_1_tail': ('ends',   'end',     1, d_lev_ends_end),
 
-        ('barfly',   'fly',   3, d_lev_barfly_fly),      # Del_3_head
-        ('barfly',   'bay',   3, d_lev_barfly_bay),      # Del_3_body
-        ('barfly',   'bar',   3, d_lev_barfly_bar),      # Del_3_tail
+        'Del_3_head': ('barfly',   'fly',   3, d_lev_barfly_fly),
+        'Del_3_body': ('barfly',   'bay',   3, d_lev_barfly_bay),
+        'Del_3_tail': ('barfly',   'bar',   3, d_lev_barfly_bar),
 
         # Ins
-        ('able',   'table',   1, d_lev_able_table),      # Ins_1_head
-        ('pint',   'point',   1, d_lev_pint_point),      # Ins_1_body
-        ('end',    'ends',    1, d_lev_end_ends),        # Ins_1_tail
+        'Ins_1_head': ('able',   'table',   1, d_lev_able_table),
+        'Ins_1_body': ('pint',   'point',   1, d_lev_pint_point),
+        'Ins_1_tail': ('end',    'ends',    1, d_lev_end_ends),
 
-        ('fly',    'barfly',  3, d_lev_fly_barfly),      # Ins_3_head
-        ('bay',    'barfly',  3, d_lev_bay_barfly),      # Ins_3_body
-        ('bar',    'barfly',  3, d_lev_bar_barfly),      # Ins_3_tail
+        'Ins_3_head': ('fly',    'barfly',  3, d_lev_fly_barfly),
+        'Ins_3_body': ('bay',    'barfly',  3, d_lev_bay_barfly),
+        'Ins_3_tail': ('bar',    'barfly',  3, d_lev_bar_barfly),
 
         # Sub
-        ('port',   'sort',    1, d_lev_port_sort),       # Sub_1_head
-        ('pint',   'punt',    1, d_lev_pint_punt),       # Sub_1_body
-        ('cord',   'core',    1, d_lev_cord_core),       # Sub_1_tail
-        ('a_ij_z', 'a_pq_z',  2, d_lev_ij_pq),           # Sub_2_body
+        'Sub_1_head': ('port',   'sort',    1, d_lev_port_sort),
+        'Sub_1_body': ('pint',   'punt',    1, d_lev_pint_punt),
+        'Sub_1_tail': ('cord',   'core',    1, d_lev_cord_core),
+        'Sub_2_body': ('a_ij_z', 'a_pq_z',  2, d_lev_ij_pq),
 
         # Xps
         # ('star',   'tsar',    1),                      # Xps_1_head
@@ -341,17 +324,18 @@ def test(verbose_flags=SHOW_NONE):
         # ('abcd',   'badc',    2),                      # Xps_2
 
         # Other
-        ('a',       'z',      1, d_lev_a_z),             # Short
-        ('abc',     'abc',    0, d_lev_abc_abc),         # Identical
-        ('abc',     'xyz',    3, d_lev_abc_xyz),         # Disjoint
-        ('board',   'border', 3, d_lev_board_border),    # Mix_Del_Ins
-        ('miles',   'smile',  2, d_lev_miles_smile),     # Mix_Ins_Del
-        ('sitting', 'kitten', 3, d_lev_sitting_kitten),  # Wikipedia
-        ]
+        'Sub_short':   ('a',       'z',      1, d_lev_a_z),
+        'Identical':   ('abc',     'abc',    0, d_lev_abc_abc),
+        'Disjoint':    ('abc',     'xyz',    3, d_lev_abc_xyz),
+        'Mix_Del_Ins': ('board',   'border', 3, d_lev_board_border),
+        'Mix_Ins_Del': ('miles',   'smile',  2, d_lev_miles_smile),
+        'Wikipedia':   ('sitting', 'kitten', 3, d_lev_sitting_kitten),
+        }
 
-    run_tests(test_data)
+    def test_string_chains(self, verbose=False):
+        for test_input in StringDistanceDataTest.test_data.values():
+            assert(is_string_chain_valid(*test_input, verbose))
 
 
 if __name__ == '__main__':
-    # test(verbose_flags=SHOW_NONE)
-    test(verbose_flags=SHOW_ALL)
+    unittest.main()
